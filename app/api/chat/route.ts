@@ -83,7 +83,7 @@ function normalizeChatResponse(payload: unknown): ChatResponse {
 
   return {
     helpers: normalizedHelpers,
-    summary: firstOutput,
+    reply: firstOutput,
   }
 }
 
@@ -127,6 +127,32 @@ function extractSearchTerms(message: string) {
     )
 
   return [...new Set([...explicitTerms, ...keywordTerms])].slice(0, 8)
+}
+
+function isHelperSearchIntent(message: string) {
+  const normalized = message.toLowerCase()
+
+  return [
+    "helper",
+    "cook",
+    "cooking",
+    "child",
+    "childcare",
+    "elderly",
+    "care",
+    "cleaning",
+    "laundry",
+    "maid",
+    "nanny",
+    "myanmar",
+    "india",
+    "philippines",
+    "indonesia",
+    "experience",
+    "hire",
+    "looking for",
+    "find",
+  ].some((term) => normalized.includes(term))
 }
 
 async function searchHelpersInSupabase(message: string) {
@@ -211,11 +237,24 @@ export async function POST(req: Request) {
       return NextResponse.json(normalized)
     }
 
+    if (!isHelperSearchIntent(message)) {
+      return NextResponse.json({
+        helpers: [],
+        reply:
+          normalized.reply ??
+          "Hello! I can help you find domestic helpers or answer questions about hiring through MimiDirect.",
+      })
+    }
+
     const fallbackHelpers = await searchHelpersInSupabase(message)
 
     return NextResponse.json({
       helpers: fallbackHelpers,
-      summary: normalized.summary,
+      reply:
+        normalized.reply ??
+        (fallbackHelpers.length > 0
+          ? "I found some helper profiles that may match your request."
+          : "I could not find matching helpers yet. Try a simpler search like 'Myanmar cooking helper'."),
     })
   } catch (error) {
     const message =

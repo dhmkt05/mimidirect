@@ -13,6 +13,13 @@ export type Helper = {
 
 export type ChatResponse = {
   helpers?: Helper[]
-  summary?: string | null
+  reply?: string | null
   error?: string
+}
+
+export type ChatMessage = {
+  id: string
+  role: "user" | "assistant"
+  content: string
+  helpers?: Helper[]
 }

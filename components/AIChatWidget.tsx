@@ -3,7 +3,7 @@
 import { useState } from "react"
 
 import { getHelperImageSrc, getWhatsAppLink } from "@/lib/helper-utils"
-import type { ChatResponse, Helper } from "@/types/helper"
+import type { ChatMessage, ChatResponse, Helper } from "@/types/helper"
 
 /* eslint-disable @next/next/no-img-element */
 
@@ -11,19 +11,31 @@ export default function AIChatWidget(){
 
 const [open,setOpen] = useState(true)
 const [message,setMessage] = useState("")
-const [helpers,setHelpers] = useState<Helper[]>([])
+const [messages,setMessages] = useState<ChatMessage[]>([
+{
+id: "widget-welcome",
+role: "assistant",
+content: "Hi! I can chat with you or help you find a suitable helper.",
+},
+])
 const [loading,setLoading] = useState(false)
 const [error,setError] = useState<string | null>(null)
 
 async function searchHelpers(msg?:string){
-
-const query = msg || message
+const query = (msg || message).trim()
 
 if(!query.trim()) return
 
+const userMessage: ChatMessage = {
+id: `${Date.now()}-widget-user`,
+role: "user",
+content: query,
+}
+
 setLoading(true)
 setError(null)
-setHelpers([])
+setMessage("")
+setMessages((current) => [...current, userMessage])
 
 try {
 const res = await fetch("/api/chat",{
@@ -39,11 +51,28 @@ throw new Error(errorData?.error || fallbackError)
 }
 
 const data: ChatResponse = await res.json()
+const assistantMessage: ChatMessage = {
+id: `${Date.now()}-widget-assistant`,
+role: "assistant",
+content:
+data.reply ||
+((data.helpers?.length ?? 0) > 0
+? "Here are some helpers that may suit your request."
+: "I’m here to help. Try asking about a type of helper or say hello."),
+helpers: data.helpers || [],
+}
 
-setHelpers(data.helpers || [])
-setMessage("")
+setMessages((current) => [...current, assistantMessage])
 } catch (err) {
 setError(err instanceof Error ? err.message : "Search error. Please try again.")
+setMessages((current) => [
+...current,
+{
+id: `${Date.now()}-widget-assistant-error`,
+role: "assistant",
+content: "I ran into an issue while responding. Please try again.",
+},
+])
 } finally {
 setLoading(false)
 }
@@ -71,10 +100,6 @@ return(
 </div>
 
 <div className="flex-1 overflow-y-auto p-4 space-y-4">
-
-<div className="bg-gray-100 p-3 rounded-xl text-sm">
-Hi 👋 I&apos;m Mimi AI. Tell me what kind of helper you need.
-</div>
 
 {error ? (
 <div className="rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700">
@@ -114,8 +139,21 @@ Myanmar
 
 </div>
 
-{helpers.map((helper)=>(
+{messages.map((entry)=>(
+<div key={entry.id}>
+<div
+className={
+entry.role === "user"
+? "ml-auto max-w-[85%] rounded-2xl bg-accent px-3 py-2 text-sm text-accent-contrast"
+: "max-w-[90%] rounded-2xl bg-surface-strong px-3 py-2 text-sm text-foreground"
+}
+>
+{entry.content}
+</div>
 
+{entry.helpers && entry.helpers.length > 0 ? (
+<div className="mt-3 space-y-3">
+{entry.helpers.map((helper: Helper)=>(
 <div
 key={helper.id}
 className="flex gap-3 rounded-xl border border-border bg-surface-strong p-3 shadow-sm"
@@ -124,7 +162,7 @@ className="flex gap-3 rounded-xl border border-border bg-surface-strong p-3 shad
 <img
 src={getHelperImageSrc(helper.photo_url)}
 alt={helper.name}
-className="w-14 h-14 rounded-lg object-cover"
+className="h-14 w-14 rounded-lg object-cover"
 />
 
 <div className="flex-1 text-sm">
@@ -168,14 +206,11 @@ Contact on WhatsApp
 </div>
 
 </div>
-
 ))}
-
-{!loading && !error && helpers.length === 0 ? (
-<div className="rounded-xl border border-border bg-surface-strong p-3 text-sm text-muted">
-No helper cards matched yet. Try “Cooking helper” or “Myanmar helper”.
 </div>
 ) : null}
+</div>
+))}
 
 </div>
 

@@ -3,24 +3,39 @@
 import { useState } from "react"
 
 import { getHelperImageSrc, getWhatsAppLink } from "@/lib/helper-utils"
-import type { ChatResponse, Helper } from "@/types/helper"
+import type { ChatMessage, ChatResponse, Helper } from "@/types/helper"
 
 /* eslint-disable @next/next/no-img-element */
 
 export default function ChatPage() {
 
 const [message,setMessage] = useState("")
-const [helpers,setHelpers] = useState<Helper[]>([])
+const [messages,setMessages] = useState<ChatMessage[]>([
+{
+id: "welcome",
+role: "assistant",
+content:
+"Hello! I can chat normally and also help you find domestic helpers. Tell me what you need, or just say hi.",
+},
+])
 const [loading,setLoading] = useState(false)
 const [error,setError] = useState<string | null>(null)
 
 async function searchHelpers(){
+const trimmedMessage = message.trim()
 
-if(!message.trim()) return
+if(!trimmedMessage) return
+
+const userMessage: ChatMessage = {
+id: `${Date.now()}-user`,
+role: "user",
+content: trimmedMessage,
+}
 
 setLoading(true)
 setError(null)
-setHelpers([])
+setMessage("")
+setMessages((current) => [...current, userMessage])
 
 try{
 
@@ -29,7 +44,7 @@ method:"POST",
 headers:{
 "Content-Type":"application/json"
 },
-body:JSON.stringify({message})
+body:JSON.stringify({message:trimmedMessage})
 })
 
 if(!res.ok){
@@ -39,11 +54,29 @@ throw new Error(errorData?.error || fallbackError)
 }
 
 const data: ChatResponse = await res.json()
+const assistantMessage: ChatMessage = {
+id: `${Date.now()}-assistant`,
+role: "assistant",
+content:
+data.reply ||
+((data.helpers?.length ?? 0) > 0
+? "Here are some helper profiles that match your request."
+: "I’m here to help. Try asking about a helper type, country, or experience level."),
+helpers: data.helpers || [],
+}
 
-setHelpers(data.helpers || [])
+setMessages((current) => [...current, assistantMessage])
 
 }catch(err){
 setError(err instanceof Error ? err.message : "Search error. Please try again.")
+setMessages((current) => [
+...current,
+{
+id: `${Date.now()}-assistant-error`,
+role: "assistant",
+content: "I ran into an issue while responding. Please try again.",
+},
+])
 } finally {
 setLoading(false)
 }
@@ -91,9 +124,24 @@ className="rounded-2xl bg-accent px-5 py-3 font-semibold text-accent-contrast sm
 </p>
 ) : null}
 
-<div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3">
+<div className="space-y-6">
+{messages.map((entry)=>(
+<div key={entry.id} className={entry.role === "user" ? "ml-auto max-w-3xl" : "max-w-4xl"}>
+<div
+className={
+entry.role === "user"
+? "ml-auto max-w-2xl rounded-3xl bg-accent px-5 py-4 text-accent-contrast"
+: "rounded-3xl border border-border bg-surface px-5 py-4 text-foreground shadow-sm"
+}
+>
+<p className="whitespace-pre-wrap text-sm sm:text-base">
+{entry.content}
+</p>
+</div>
 
-{helpers.map((helper)=>(
+{entry.helpers && entry.helpers.length > 0 ? (
+<div className="mt-4 grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3">
+{entry.helpers.map((helper: Helper)=>(
 <div
 key={helper.id}
 className="rounded-3xl border border-border bg-surface p-5 shadow-sm"
@@ -143,13 +191,15 @@ Contact Helper
 
 </div>
 ))}
-
+</div>
+) : null}
+</div>
+))}
 </div>
 
-{!loading && !error && helpers.length === 0 ? (
+{!loading && !error && messages.length === 1 ? (
 <p className="mt-8 rounded-2xl border border-border bg-surface px-4 py-6 text-center text-sm text-muted">
-No matching helper cards were found for that search yet. Try a simpler request like
- “Myanmar cooking helper” or “childcare helper”.
+Start with a greeting or ask for something like “I need a Myanmar cooking helper with childcare experience.”
 </p>
 ) : null}
 
