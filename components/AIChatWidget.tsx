@@ -2,12 +2,19 @@
 
 import { useState } from "react"
 
+import { getHelperImageSrc, getWhatsAppLink } from "@/lib/helper-utils"
+import type { ChatResponse, Helper } from "@/types/helper"
+
+/* eslint-disable @next/next/no-img-element */
+
 export default function AIChatWidget(){
 
 const [open,setOpen] = useState(true)
 const [message,setMessage] = useState("")
-const [helpers,setHelpers] = useState<any[]>([])
+const [helpers,setHelpers] = useState<Helper[]>([])
 const [loading,setLoading] = useState(false)
+const [error,setError] = useState<string | null>(null)
+const [summary,setSummary] = useState<string | null>(null)
 
 async function searchHelpers(msg?:string){
 
@@ -16,19 +23,32 @@ const query = msg || message
 if(!query.trim()) return
 
 setLoading(true)
+setError(null)
+setSummary(null)
 
+try {
 const res = await fetch("/api/chat",{
 method:"POST",
 headers:{ "Content-Type":"application/json" },
 body:JSON.stringify({message:query})
 })
 
-const data = await res.json()
+if(!res.ok){
+const fallbackError = "We could not reach the AI helper search right now."
+const errorData = await res.json().catch(() => null)
+throw new Error(errorData?.error || fallbackError)
+}
+
+const data: ChatResponse = await res.json()
 
 setHelpers(data.helpers || [])
-
-setLoading(false)
+setSummary(data.summary || null)
 setMessage("")
+} catch (err) {
+setError(err instanceof Error ? err.message : "Search error. Please try again.")
+} finally {
+setLoading(false)
+}
 }
 
 return(
@@ -55,8 +75,20 @@ return(
 <div className="flex-1 overflow-y-auto p-4 space-y-4">
 
 <div className="bg-gray-100 p-3 rounded-xl text-sm">
-Hi 👋 I'm Mimi AI. Tell me what kind of helper you need.
+Hi 👋 I&apos;m Mimi AI. Tell me what kind of helper you need.
 </div>
+
+{error ? (
+<div className="rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+{error}
+</div>
+) : null}
+
+{summary ? (
+<div className="rounded-xl border border-gray-200 bg-gray-50 p-3 text-sm text-gray-700">
+{summary}
+</div>
+) : null}
 
 <div className="flex flex-wrap gap-2">
 
@@ -98,7 +130,8 @@ className="border rounded-xl p-3 flex gap-3 shadow-sm"
 >
 
 <img
-src={helper.photo_url}
+src={getHelperImageSrc(helper.photo_url)}
+alt={helper.name}
 className="w-14 h-14 rounded-lg object-cover"
 />
 
@@ -109,16 +142,32 @@ className="w-14 h-14 rounded-lg object-cover"
 </p>
 
 <p className="text-gray-500 text-xs">
-{helper.country} • {helper.experience} yrs
+{helper.country}
 </p>
 
 <p className="text-xs mt-1">
 {helper.skills}
 </p>
 
+{helper.experience ? (
+<p className="text-xs mt-1 text-gray-500">
+{helper.experience} yrs experience
+</p>
+) : null}
+
+{helper.rate ? (
+<p className="text-xs mt-1 text-gray-500">
+Rate: {helper.rate}
+</p>
+) : null}
+
 <a
-href={`https://wa.me/${helper.whatsapp}`}
+href={getWhatsAppLink(
+helper.whatsapp,
+`Hi, I found ${helper.name} on MimiDirect and I am interested.`
+)}
 target="_blank"
+rel="noreferrer"
 className="inline-block mt-2 text-green-600 text-xs font-medium"
 >
 Contact on WhatsApp

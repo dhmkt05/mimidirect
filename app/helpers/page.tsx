@@ -1,6 +1,12 @@
-import { createClient } from "@supabase/supabase-js"
+/* eslint-disable @next/next/no-img-element */
+import Link from "next/link"
 import { cookies } from "next/headers"
-import { createServerComponentClient } from "@supabase/auth-helpers-nextjs"
+import { redirect } from "next/navigation"
+import { createServerClient } from "@supabase/auth-helpers-nextjs"
+import { createClient } from "@supabase/supabase-js"
+
+import { getHelperImageSrc, getWhatsAppLink } from "@/lib/helper-utils"
+import type { Helper } from "@/types/helper"
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -8,9 +14,27 @@ const supabase = createClient(
 )
 
 export default async function HelpersPage() {
-
-  // Check login session
-  const supabaseAuth = createServerComponentClient({ cookies })
+  const cookieStore = await cookies()
+  const supabaseAuth = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        getAll() {
+          return cookieStore.getAll()
+        },
+        setAll(cookiesToSet) {
+          try {
+            cookiesToSet.forEach(({ name, value, options }) => {
+              cookieStore.set(name, value, options)
+            })
+          } catch {
+            // Server components can read cookies without always being able to write them.
+          }
+        },
+      },
+    }
+  )
 
   const {
     data: { session },
@@ -18,21 +42,14 @@ export default async function HelpersPage() {
 
   // If user not logged in
   if (!session) {
-    return (
-      <main className="max-w-6xl mx-auto px-6 py-16">
-        <h1 className="text-3xl font-bold">Login Required</h1>
-        <p className="text-gray-500 mt-4">
-          Please login to view helper profiles.
-        </p>
-      </main>
-    )
+    redirect("/login?redirectTo=/helpers")
   }
 
-  // Fetch helpers
-  const { data: helpers } = await supabase
+  const { data, error } = await supabase
     .from("helpers")
     .select("*")
     .order("created_at", { ascending: false })
+  const helpers = (data ?? []) as Helper[]
 
   return (
 
@@ -46,12 +63,18 @@ export default async function HelpersPage() {
         Browse available domestic helpers
       </p>
 
+      {error ? (
+        <p className="mt-6 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+          We could not load helper profiles right now. Please try again shortly.
+        </p>
+      ) : null}
+
 
       {/* Helpers Grid */}
 
       <div className="grid md:grid-cols-3 gap-8 mt-10">
 
-        {helpers?.map((helper) => (
+        {helpers.map((helper) => (
 
           <div
             key={helper.id}
@@ -61,7 +84,8 @@ export default async function HelpersPage() {
             {/* Helper Photo */}
 
             <img
-              src={helper.photo_url}
+              src={getHelperImageSrc(helper.photo_url)}
+              alt={helper.name}
               className="w-full h-56 object-cover"
             />
 
@@ -90,16 +114,20 @@ export default async function HelpersPage() {
 
               <div className="flex gap-2 mt-4">
 
-                <a
+                <Link
                   href={`/helpers/${helper.id}`}
                   className="flex-1 border text-center py-2 rounded hover:bg-gray-50"
                 >
                   Profile
-                </a>
+                </Link>
 
                 <a
-                  href="https://wa.me/959797949547"
+                  href={getWhatsAppLink(
+                    helper.whatsapp,
+                    `Hi, I am interested in ${helper.name} from MimiDirect.`
+                  )}
                   target="_blank"
+                  rel="noreferrer"
                   className="flex-1 bg-green-500 text-white text-center py-2 rounded hover:bg-green-600"
                 >
                   Contact Helper

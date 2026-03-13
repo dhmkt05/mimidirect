@@ -2,17 +2,26 @@
 
 import { useState } from "react"
 
+import { getHelperImageSrc, getWhatsAppLink } from "@/lib/helper-utils"
+import type { ChatResponse, Helper } from "@/types/helper"
+
+/* eslint-disable @next/next/no-img-element */
+
 export default function ChatPage() {
 
 const [message,setMessage] = useState("")
-const [helpers,setHelpers] = useState<any[]>([])
+const [helpers,setHelpers] = useState<Helper[]>([])
 const [loading,setLoading] = useState(false)
+const [error,setError] = useState<string | null>(null)
+const [summary,setSummary] = useState<string | null>(null)
 
 async function searchHelpers(){
 
 if(!message.trim()) return
 
 setLoading(true)
+setError(null)
+setSummary(null)
 
 try{
 
@@ -24,14 +33,19 @@ headers:{
 body:JSON.stringify({message})
 })
 
-const data = await res.json()
-
-if(data.helpers){
-setHelpers(data.helpers)
+if(!res.ok){
+const fallbackError = "We could not reach the AI helper search right now."
+const errorData = await res.json().catch(() => null)
+throw new Error(errorData?.error || fallbackError)
 }
 
+const data: ChatResponse = await res.json()
+
+setHelpers(data.helpers || [])
+setSummary(data.summary || null)
+
 }catch(err){
-console.error("Search error:",err)
+setError(err instanceof Error ? err.message : "Search error. Please try again.")
 }
 
 setLoading(false)
@@ -69,6 +83,18 @@ className="bg-black text-white px-5 rounded"
 
 </div>
 
+{error ? (
+<p className="mb-6 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+{error}
+</p>
+) : null}
+
+{summary ? (
+<p className="mb-6 rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-700">
+{summary}
+</p>
+) : null}
+
 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
 
 {helpers.map((helper)=>(
@@ -78,7 +104,8 @@ className="border rounded-lg p-4 shadow bg-white"
 >
 
 <img
-src={helper.photo_url || "/logo.png"}
+src={getHelperImageSrc(helper.photo_url)}
+alt={helper.name}
 className="w-full h-40 object-cover rounded"
 />
 
@@ -94,13 +121,25 @@ className="w-full h-40 object-cover rounded"
 {helper.skills}
 </p>
 
+{helper.experience ? (
 <p className="text-sm mt-1">
 {helper.experience} years experience
 </p>
+) : null}
+
+{helper.rate ? (
+<p className="text-sm mt-1 text-gray-600">
+Rate: {helper.rate}
+</p>
+) : null}
 
 <a
-href={`https://wa.me/959797949547?text=Hi I found ${helper.name} on MimiDirect`}
+href={getWhatsAppLink(
+helper.whatsapp,
+`Hi, I found ${helper.name} on MimiDirect and I am interested.`
+)}
 target="_blank"
+rel="noreferrer"
 className="block mt-3 bg-green-500 text-white text-center py-2 rounded"
 >
 Contact Helper

@@ -1,5 +1,6 @@
 import Link from "next/link"
 import Image from "next/image"
+import ThemeToggle from "./ThemeToggle"
 
 export default function Navbar() {
 
@@ -48,7 +49,8 @@ export default function Navbar() {
           >
             Login
           </Link>
-
+          <ThemeToggle />
+          
         </div>
 
       </div>
