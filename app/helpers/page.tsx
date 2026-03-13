@@ -1,4 +1,6 @@
 import { createClient } from "@supabase/supabase-js"
+import { cookies } from "next/headers"
+import { createServerComponentClient } from "@supabase/auth-helpers-nextjs"
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -7,6 +9,26 @@ const supabase = createClient(
 
 export default async function HelpersPage() {
 
+  // Check login session
+  const supabaseAuth = createServerComponentClient({ cookies })
+
+  const {
+    data: { session },
+  } = await supabaseAuth.auth.getSession()
+
+  // If user not logged in
+  if (!session) {
+    return (
+      <main className="max-w-6xl mx-auto px-6 py-16">
+        <h1 className="text-3xl font-bold">Login Required</h1>
+        <p className="text-gray-500 mt-4">
+          Please login to view helper profiles.
+        </p>
+      </main>
+    )
+  }
+
+  // Fetch helpers
   const { data: helpers } = await supabase
     .from("helpers")
     .select("*")
@@ -69,7 +91,7 @@ export default async function HelpersPage() {
               <div className="flex gap-2 mt-4">
 
                 <a
-                  href={`/helper/${helper.id}`}
+                  href={`/helpers/${helper.id}`}
                   className="flex-1 border text-center py-2 rounded hover:bg-gray-50"
                 >
                   Profile
