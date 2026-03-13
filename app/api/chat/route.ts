@@ -1,6 +1,12 @@
 import { NextResponse } from "next/server"
+import { createClient } from "@supabase/supabase-js"
 
 import type { ChatResponse, Helper } from "@/types/helper"
+
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+)
 
 type WebhookHelper =
   | Helper
@@ -81,6 +87,91 @@ function normalizeChatResponse(payload: unknown): ChatResponse {
   }
 }
 
+function extractSearchTerms(message: string) {
+  const normalized = message.toLowerCase()
+  const explicitTerms = [
+    "myanmar",
+    "india",
+    "philippines",
+    "indonesia",
+    "cooking",
+    "cook",
+    "child",
+    "childcare",
+    "elderly",
+    "cleaning",
+    "laundry",
+    "care",
+  ].filter((term) => normalized.includes(term))
+
+  const keywordTerms = normalized
+    .replace(/[^a-z0-9\s]/g, " ")
+    .split(/\s+/)
+    .filter((word) => word.length > 2)
+    .filter(
+      (word) =>
+        ![
+          "want",
+          "need",
+          "helper",
+          "with",
+          "that",
+          "take",
+          "have",
+          "year",
+          "years",
+          "experience",
+          "looking",
+          "find",
+        ].includes(word)
+    )
+
+  return [...new Set([...explicitTerms, ...keywordTerms])].slice(0, 8)
+}
+
+async function searchHelpersInSupabase(message: string) {
+  const terms = extractSearchTerms(message)
+
+  if (terms.length === 0) {
+    const { data } = await supabase
+      .from("helpers")
+      .select("*")
+      .limit(6)
+
+    return (data ?? []) as Helper[]
+  }
+
+  const filters = terms.flatMap((term) => [
+    `name.ilike.%${term}%`,
+    `country.ilike.%${term}%`,
+    `skills.ilike.%${term}%`,
+    `description.ilike.%${term}%`,
+    `languages.ilike.%${term}%`,
+  ])
+
+  const { data } = await supabase
+    .from("helpers")
+    .select("*")
+    .or(filters.join(","))
+    .limit(12)
+
+  const helpers = ((data ?? []) as Helper[]).sort((left, right) => {
+    const leftScore = terms.reduce((score, term) => {
+      const haystack = `${left.name} ${left.country} ${left.skills} ${left.description ?? ""} ${left.languages ?? ""}`.toLowerCase()
+      return haystack.includes(term) ? score + 1 : score
+    }, 0)
+
+    const rightScore = terms.reduce((score, term) => {
+      const haystack = `${right.name} ${right.country} ${right.skills} ${right.description ?? ""} ${right.languages ?? ""}`.toLowerCase()
+      return haystack.includes(term) ? score + 1 : score
+    }, 0)
+
+    return rightScore - leftScore
+  })
+
+  return helpers
+}
+
 export async function POST(req: Request) {
   try {
     const body = await req.json()
@@ -114,8 +205,18 @@ export async function POST(req: Request) {
     }
 
     const data = await res.json()
+    const normalized = normalizeChatResponse(data)
 
-    return NextResponse.json(normalizeChatResponse(data))
+    if ((normalized.helpers?.length ?? 0) > 0) {
+      return NextResponse.json(normalized)
+    }
+
+    const fallbackHelpers = await searchHelpersInSupabase(message)
+
+    return NextResponse.json({
+      helpers: fallbackHelpers,
+      summary: normalized.summary,
+    })
   } catch (error) {
     const message =
       error instanceof Error && error.name === "TimeoutError"

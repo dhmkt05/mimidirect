@@ -20,6 +20,7 @@ if(!message.trim()) return
 
 setLoading(true)
 setError(null)
+setHelpers([])
 
 try{
 
@@ -43,9 +44,9 @@ setHelpers(data.helpers || [])
 
 }catch(err){
 setError(err instanceof Error ? err.message : "Search error. Please try again.")
-}
-
+} finally {
 setLoading(false)
+}
 
 }
 
@@ -144,6 +145,13 @@ Contact Helper
 ))}
 
 </div>
+
+{!loading && !error && helpers.length === 0 ? (
+<p className="mt-8 rounded-2xl border border-border bg-surface px-4 py-6 text-center text-sm text-muted">
+No matching helper cards were found for that search yet. Try a simpler request like
+ “Myanmar cooking helper” or “childcare helper”.
+</p>
+) : null}
 
 </main>
 

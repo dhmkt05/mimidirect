@@ -23,6 +23,7 @@ if(!query.trim()) return
 
 setLoading(true)
 setError(null)
+setHelpers([])
 
 try {
 const res = await fetch("/api/chat",{
@@ -169,6 +170,12 @@ Contact on WhatsApp
 </div>
 
 ))}
+
+{!loading && !error && helpers.length === 0 ? (
+<div className="rounded-xl border border-border bg-surface-strong p-3 text-sm text-muted">
+No helper cards matched yet. Try “Cooking helper” or “Myanmar helper”.
+</div>
+) : null}
 
 </div>
 
