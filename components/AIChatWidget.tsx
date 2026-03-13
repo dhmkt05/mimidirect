@@ -14,7 +14,6 @@ const [message,setMessage] = useState("")
 const [helpers,setHelpers] = useState<Helper[]>([])
 const [loading,setLoading] = useState(false)
 const [error,setError] = useState<string | null>(null)
-const [summary,setSummary] = useState<string | null>(null)
 
 async function searchHelpers(msg?:string){
 
@@ -24,7 +23,6 @@ if(!query.trim()) return
 
 setLoading(true)
 setError(null)
-setSummary(null)
 
 try {
 const res = await fetch("/api/chat",{
@@ -42,7 +40,6 @@ throw new Error(errorData?.error || fallbackError)
 const data: ChatResponse = await res.json()
 
 setHelpers(data.helpers || [])
-setSummary(data.summary || null)
 setMessage("")
 } catch (err) {
 setError(err instanceof Error ? err.message : "Search error. Please try again.")
@@ -57,7 +54,7 @@ return(
 
 {open && (
 
-<div className="w-[340px] h-[520px] bg-white rounded-2xl shadow-2xl flex flex-col border border-gray-200">
+<div className="flex h-[520px] w-[calc(100vw-2rem)] max-w-[360px] flex-col rounded-2xl border border-border bg-surface shadow-2xl">
 
 <div className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-4 py-3 flex justify-between items-center rounded-t-2xl">
 
@@ -81,12 +78,6 @@ Hi 👋 I&apos;m Mimi AI. Tell me what kind of helper you need.
 {error ? (
 <div className="rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700">
 {error}
-</div>
-) : null}
-
-{summary ? (
-<div className="rounded-xl border border-gray-200 bg-gray-50 p-3 text-sm text-gray-700">
-{summary}
 </div>
 ) : null}
 
@@ -126,7 +117,7 @@ Myanmar
 
 <div
 key={helper.id}
-className="border rounded-xl p-3 flex gap-3 shadow-sm"
+className="flex gap-3 rounded-xl border border-border bg-surface-strong p-3 shadow-sm"
 >
 
 <img
@@ -141,22 +132,22 @@ className="w-14 h-14 rounded-lg object-cover"
 {helper.name}
 </p>
 
-<p className="text-gray-500 text-xs">
+<p className="text-xs text-muted">
 {helper.country}
 </p>
 
-<p className="text-xs mt-1">
+<p className="mt-1 text-xs text-foreground">
 {helper.skills}
 </p>
 
 {helper.experience ? (
-<p className="text-xs mt-1 text-gray-500">
+<p className="mt-1 text-xs text-muted">
 {helper.experience} yrs experience
 </p>
 ) : null}
 
 {helper.rate ? (
-<p className="text-xs mt-1 text-gray-500">
+<p className="mt-1 text-xs text-muted">
 Rate: {helper.rate}
 </p>
 ) : null}
@@ -168,7 +159,7 @@ helper.whatsapp,
 )}
 target="_blank"
 rel="noreferrer"
-className="inline-block mt-2 text-green-600 text-xs font-medium"
+className="mt-2 inline-block text-xs font-semibold text-[#159447]"
 >
 Contact on WhatsApp
 </a>
@@ -188,7 +179,7 @@ value={message}
 onChange={(e)=>setMessage(e.target.value)}
 onKeyDown={(e)=>{ if(e.key==="Enter") searchHelpers() }}
 placeholder="Example: helper who can cook"
-className="border rounded-lg px-3 py-2 flex-1 text-sm"
+className="flex-1 rounded-lg border border-border bg-surface-strong px-3 py-2 text-sm text-foreground outline-none"
 />
 
 <button

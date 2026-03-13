@@ -13,11 +13,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en" suppressHydrationWarning>
       <body className="antialiased">
-        <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+        <ThemeProvider attribute="class" defaultTheme="light" enableSystem>
 
           <Navbar />
 
-          <main className="min-h-screen bg-white text-black dark:bg-black dark:text-white">
+          <main className="min-h-screen bg-background text-foreground">
             {children}
           </main>
 

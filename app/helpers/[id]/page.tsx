@@ -61,35 +61,37 @@ return <div className="p-10">Helper not found</div>
 
 return(
 
-<main className="max-w-4xl mx-auto p-10">
+<main className="mx-auto max-w-4xl px-4 py-10 sm:px-6 sm:py-16">
 
+<div className="overflow-hidden rounded-[2rem] border border-border bg-surface shadow-sm">
 <img
 src={getHelperImageSrc(helper.photo_url)}
 alt={helper.name}
-className="w-64 rounded-lg"
+className="h-72 w-full object-cover sm:h-96"
 />
 
-<h1 className="text-3xl font-bold mt-6">
+<div className="p-6 sm:p-8">
+<h1 className="text-3xl font-bold sm:text-4xl">
 {helper.name}
 </h1>
 
-<p className="text-gray-500 mt-2">
+<p className="mt-2 text-muted">
 {helper.country}
 </p>
 
-<p className="mt-4">
+<p className="mt-4 text-foreground">
 Skills: {helper.skills}
 </p>
 
-<p className="mt-2">
+<p className="mt-2 text-muted">
 Experience: {helper.experience} years
 </p>
 
-<p className="mt-2">
+<p className="mt-2 text-muted">
 Languages: {helper.languages}
 </p>
 
-<p className="mt-4">
+<p className="mt-4 text-foreground">
 {helper.description}
 </p>
 
@@ -100,10 +102,12 @@ helper.whatsapp,
 )}
 target="_blank"
 rel="noreferrer"
-className="inline-block mt-6 bg-green-500 text-white px-6 py-3 rounded"
+className="mt-6 inline-block rounded-full bg-[#25D366] px-6 py-3 font-semibold text-white"
 >
 Contact on WhatsApp
 </a>
+</div>
+</div>
 
 </main>
 

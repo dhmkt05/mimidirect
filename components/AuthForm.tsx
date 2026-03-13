@@ -83,7 +83,7 @@ export default function AuthForm({ mode, redirectTo = "/helpers" }: AuthFormProp
           type="email"
           value={email}
           onChange={(event) => setEmail(event.target.value)}
-          className="w-full rounded-lg border px-4 py-3"
+          className="w-full rounded-lg border border-border bg-surface-strong px-4 py-3 text-foreground outline-none"
           placeholder="you@example.com"
           required
         />
@@ -98,7 +98,7 @@ export default function AuthForm({ mode, redirectTo = "/helpers" }: AuthFormProp
           type="password"
           value={password}
           onChange={(event) => setPassword(event.target.value)}
-          className="w-full rounded-lg border px-4 py-3"
+          className="w-full rounded-lg border border-border bg-surface-strong px-4 py-3 text-foreground outline-none"
           placeholder="Enter your password"
           minLength={6}
           required
@@ -111,16 +111,16 @@ export default function AuthForm({ mode, redirectTo = "/helpers" }: AuthFormProp
       <button
         type="submit"
         disabled={loading}
-        className="w-full rounded-lg bg-black px-4 py-3 text-white disabled:cursor-not-allowed disabled:opacity-60"
+        className="w-full rounded-lg bg-accent px-4 py-3 font-semibold text-accent-contrast disabled:cursor-not-allowed disabled:opacity-60"
       >
         {loading ? "Please wait..." : isLogin ? "Log In" : "Create Account"}
       </button>
 
-      <p className="text-sm text-gray-600">
+      <p className="text-sm text-muted">
         {isLogin ? "Need an account?" : "Already have an account?"}{" "}
         <Link
           href={isLogin ? `/signup?redirectTo=${encodeURIComponent(redirectTo)}` : `/login?redirectTo=${encodeURIComponent(redirectTo)}`}
-          className="font-medium text-black underline"
+          className="font-medium text-foreground underline"
         >
           {isLogin ? "Sign up" : "Log in"}
         </Link>

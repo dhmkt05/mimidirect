@@ -1,5 +1,7 @@
 /* eslint-disable @next/next/no-img-element */
 import Link from "next/link"
+import { cookies } from "next/headers"
+import { createServerClient } from "@supabase/auth-helpers-nextjs"
 import { createClient } from "@supabase/supabase-js"
 
 import { getHelperImageSrc } from "@/lib/helper-utils"
@@ -11,6 +13,31 @@ process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 )
 
 export default async function HomePage(){
+const cookieStore = await cookies()
+const supabaseAuth = createServerClient(
+process.env.NEXT_PUBLIC_SUPABASE_URL!,
+process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+{
+cookies: {
+getAll() {
+return cookieStore.getAll()
+},
+setAll(cookiesToSet) {
+try {
+cookiesToSet.forEach(({ name, value, options }) => {
+cookieStore.set(name, value, options)
+})
+} catch {
+// Homepage only needs read access for privacy-aware rendering.
+}
+},
+},
+}
+)
+const {
+data: { session },
+} = await supabaseAuth.auth.getSession()
+const isLoggedIn = Boolean(session)
 
 const { data, error } = await supabase
 .from("helpers")
@@ -20,48 +47,66 @@ const helpers = (data ?? []) as Helper[]
 
 return(
 
-<main className="max-w-6xl mx-auto px-6 py-20">
+<main className="mx-auto max-w-6xl px-4 py-10 sm:px-6 sm:py-16">
 
 {/* HERO */}
 
-<section className="text-center">
+<section className="rounded-[2rem] border border-border bg-surface px-6 py-12 text-center shadow-sm sm:px-10">
 
-<h1 className="text-5xl font-bold">
+<p className="text-sm font-semibold uppercase tracking-[0.25em] text-accent">
+AI-powered domestic helper matching
+</p>
+
+<h1 className="mt-4 text-4xl font-bold tracking-tight sm:text-5xl lg:text-6xl">
 Find. Hire. Direct.
 </h1>
 
-<p className="text-gray-500 mt-4 max-w-xl mx-auto">
-Use AI to instantly find trusted domestic helpers.
+<p className="mx-auto mt-4 max-w-2xl text-base text-muted sm:text-lg">
+MimiDirect helps employers describe what they need and lets AI surface matching
+helpers faster, so you spend less time searching and more time hiring the right person.
 </p>
 
-<div className="mt-8 flex justify-center gap-4">
+<div className="mt-8 flex flex-col justify-center gap-3 sm:flex-row">
 
 <Link
 href="/chat"
-className="bg-black text-white px-6 py-3 rounded"
+className="rounded-full bg-accent px-6 py-3 font-semibold text-accent-contrast"
 >
 Ask AI
 </Link>
 
 <Link
 href="/helpers"
-className="border px-6 py-3 rounded"
+className="rounded-full border border-border px-6 py-3 font-semibold text-foreground"
 >
 Browse Helpers
 </Link>
 
 </div>
 
+<p className="mx-auto mt-5 max-w-xl text-sm text-muted">
+{isLoggedIn
+? "You are logged in, so helper photos are shown clearly."
+: "Helper faces stay blurred on the homepage for privacy. Employers can log in to view full photos."}
+</p>
+
 </section>
 
 
 {/* HELPERS */}
 
-<section className="mt-24">
+<section className="mt-14 sm:mt-20">
 
-<h2 className="text-2xl font-bold text-center">
-Available Helpers
+<div className="flex flex-col gap-3 text-center sm:text-left">
+<h2 className="text-2xl font-bold sm:text-3xl">
+Popular Helpers
 </h2>
+
+<p className="text-muted">
+Preview trusted candidates below. AI search is still the fastest way to narrow by skills,
+country, and availability.
+</p>
+</div>
 
 {error ? (
 <p className="mt-6 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
@@ -69,42 +114,57 @@ We could not load helpers right now. Please try again shortly.
 </p>
 ) : null}
 
-<div className="grid md:grid-cols-3 gap-6 mt-10">
+<div className="mt-8 grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3">
 
 {helpers?.map((helper)=>(
 <div
 key={helper.id}
-className="border rounded-lg p-4 shadow bg-white"
+className="overflow-hidden rounded-3xl border border-border bg-surface-strong shadow-sm"
 >
 
+<div className="relative">
 <img
 src={getHelperImageSrc(helper.photo_url)}
-alt={helper.name}
-className="w-full h-40 object-cover rounded"
+alt={isLoggedIn ? helper.name : `${helper.country} helper preview`}
+className={`h-56 w-full object-cover ${isLoggedIn ? "" : "scale-105 blur-md"}`}
 />
 
-<h3 className="font-bold mt-3">
+{!isLoggedIn ? (
+<div className="absolute inset-0 flex items-center justify-center bg-slate-900/25">
+<Link
+href="/login?redirectTo=/helpers"
+className="rounded-full bg-white/95 px-4 py-2 text-sm font-semibold text-slate-900"
+>
+Login to view full photo
+</Link>
+</div>
+) : null}
+</div>
+
+<div className="p-5">
+<h3 className="font-bold text-lg">
 {helper.name}
 </h3>
 
-<p className="text-gray-500">
+<p className="mt-1 text-muted">
 {helper.country}
 </p>
 
-<p className="text-sm mt-1">
+<p className="mt-3 text-sm text-foreground">
 {helper.skills}
 </p>
 
-<p className="text-sm mt-1">
+<p className="mt-2 text-sm text-muted">
 {helper.experience} years experience
 </p>
 
 <Link
 href={`/helpers/${helper.id}`}
-className="block mt-3 border text-center py-2 rounded"
+className="mt-4 block rounded-full border border-border px-4 py-2 text-center text-sm font-semibold text-foreground"
 >
 View Profile
 </Link>
+</div>
 
 </div>
 ))}

@@ -53,13 +53,13 @@ export default async function HelpersPage() {
 
   return (
 
-    <main className="max-w-6xl mx-auto px-6 py-16">
+    <main className="mx-auto max-w-6xl px-4 py-10 sm:px-6 sm:py-16">
 
-      <h1 className="text-3xl font-bold">
+      <h1 className="text-3xl font-bold sm:text-4xl">
         Find Helpers
       </h1>
 
-      <p className="text-gray-500 mt-2">
+      <p className="mt-2 text-muted">
         Browse available domestic helpers
       </p>
 
@@ -72,13 +72,13 @@ export default async function HelpersPage() {
 
       {/* Helpers Grid */}
 
-      <div className="grid md:grid-cols-3 gap-8 mt-10">
+      <div className="mt-10 grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3">
 
         {helpers.map((helper) => (
 
           <div
             key={helper.id}
-            className="border rounded-xl overflow-hidden shadow hover:shadow-lg transition bg-white"
+            className="overflow-hidden rounded-3xl border border-border bg-surface shadow-sm transition hover:shadow-lg"
           >
 
             {/* Helper Photo */}
@@ -86,37 +86,37 @@ export default async function HelpersPage() {
             <img
               src={getHelperImageSrc(helper.photo_url)}
               alt={helper.name}
-              className="w-full h-56 object-cover"
+              className="h-56 w-full object-cover"
             />
 
             {/* Card Content */}
 
-            <div className="p-4">
+            <div className="p-5">
 
-              <h3 className="font-semibold text-lg">
+              <h3 className="text-lg font-semibold">
                 {helper.name}
               </h3>
 
-              <p className="text-gray-500 text-sm">
+              <p className="text-sm text-muted">
                 {helper.country}
               </p>
 
-              <p className="text-sm mt-2">
+              <p className="mt-2 text-sm text-foreground">
                 {helper.skills}
               </p>
 
-              <p className="text-sm text-gray-600 mt-1">
+              <p className="mt-1 text-sm text-muted">
                 {helper.experience} years experience
               </p>
 
 
               {/* Buttons */}
 
-              <div className="flex gap-2 mt-4">
+              <div className="mt-4 flex flex-col gap-2 sm:flex-row">
 
                 <Link
                   href={`/helpers/${helper.id}`}
-                  className="flex-1 border text-center py-2 rounded hover:bg-gray-50"
+                  className="flex-1 rounded-full border border-border py-2 text-center text-sm font-semibold text-foreground hover:bg-surface-strong"
                 >
                   Profile
                 </Link>
@@ -128,7 +128,7 @@ export default async function HelpersPage() {
                   )}
                   target="_blank"
                   rel="noreferrer"
-                  className="flex-1 bg-green-500 text-white text-center py-2 rounded hover:bg-green-600"
+                  className="flex-1 rounded-full bg-[#25D366] py-2 text-center text-sm font-semibold text-white"
                 >
                   Contact Helper
                 </a>

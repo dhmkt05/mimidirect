@@ -8,13 +8,13 @@ export default async function SignupPage({
   const { redirectTo } = await searchParams
 
   return (
-    <main className="mx-auto max-w-md px-6 py-16">
+    <main className="mx-auto max-w-md px-4 py-10 sm:px-6 sm:py-16">
       <h1 className="text-3xl font-bold">Create your account</h1>
-      <p className="mt-3 text-gray-600">
+      <p className="mt-3 text-muted">
         Sign up to browse protected helper profiles and photos.
       </p>
 
-      <div className="mt-8 rounded-2xl border bg-white p-6 shadow-sm">
+      <div className="mt-8 rounded-2xl border border-border bg-surface p-6 shadow-sm">
         <AuthForm mode="signup" redirectTo={redirectTo} />
       </div>
     </main>

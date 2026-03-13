@@ -8,13 +8,13 @@ export default async function LoginPage({
   const { redirectTo } = await searchParams
 
   return (
-    <main className="mx-auto max-w-md px-6 py-16">
+    <main className="mx-auto max-w-md px-4 py-10 sm:px-6 sm:py-16">
       <h1 className="text-3xl font-bold">Log in</h1>
-      <p className="mt-3 text-gray-600">
+      <p className="mt-3 text-muted">
         Access protected helper profiles and contact details.
       </p>
 
-      <div className="mt-8 rounded-2xl border bg-white p-6 shadow-sm">
+      <div className="mt-8 rounded-2xl border border-border bg-surface p-6 shadow-sm">
         <AuthForm mode="login" redirectTo={redirectTo} />
       </div>
     </main>

@@ -13,7 +13,6 @@ const [message,setMessage] = useState("")
 const [helpers,setHelpers] = useState<Helper[]>([])
 const [loading,setLoading] = useState(false)
 const [error,setError] = useState<string | null>(null)
-const [summary,setSummary] = useState<string | null>(null)
 
 async function searchHelpers(){
 
@@ -21,7 +20,6 @@ if(!message.trim()) return
 
 setLoading(true)
 setError(null)
-setSummary(null)
 
 try{
 
@@ -42,7 +40,6 @@ throw new Error(errorData?.error || fallbackError)
 const data: ChatResponse = await res.json()
 
 setHelpers(data.helpers || [])
-setSummary(data.summary || null)
 
 }catch(err){
 setError(err instanceof Error ? err.message : "Search error. Please try again.")
@@ -56,17 +53,21 @@ return(
 
 <main className="max-w-6xl mx-auto p-8">
 
-<h1 className="text-2xl font-bold mb-6">
+<h1 className="mb-3 text-3xl font-bold sm:text-4xl">
 Mimi AI Assistant 🤖
 </h1>
 
-<div className="flex gap-3 mb-10">
+<p className="mb-8 max-w-2xl text-muted">
+Describe the kind of helper you need and MimiDirect AI will return simple helper cards you can contact directly.
+</p>
+
+<div className="mb-8 flex flex-col gap-3 sm:mb-10 sm:flex-row">
 
 <input
 value={message}
 onChange={(e)=>setMessage(e.target.value)}
 placeholder="Example: Myanmar cooking helper"
-className="border p-3 w-full rounded"
+className="w-full rounded-2xl border border-border bg-surface px-4 py-3 text-foreground outline-none"
 onKeyDown={(e)=>{
 if(e.key==="Enter") searchHelpers()
 }}
@@ -74,7 +75,7 @@ if(e.key==="Enter") searchHelpers()
 
 <button
 onClick={searchHelpers}
-className="bg-black text-white px-5 rounded"
+className="rounded-2xl bg-accent px-5 py-3 font-semibold text-accent-contrast sm:px-6"
 >
 
 {loading ? "Searching..." : "Ask AI"}
@@ -89,46 +90,40 @@ className="bg-black text-white px-5 rounded"
 </p>
 ) : null}
 
-{summary ? (
-<p className="mb-6 rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-700">
-{summary}
-</p>
-) : null}
-
-<div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+<div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3">
 
 {helpers.map((helper)=>(
 <div
 key={helper.id}
-className="border rounded-lg p-4 shadow bg-white"
+className="rounded-3xl border border-border bg-surface p-5 shadow-sm"
 >
 
 <img
 src={getHelperImageSrc(helper.photo_url)}
 alt={helper.name}
-className="w-full h-40 object-cover rounded"
+className="h-44 w-full rounded-2xl object-cover"
 />
 
-<h3 className="font-bold mt-3">
+<h3 className="mt-4 text-xl font-bold">
 {helper.name}
 </h3>
 
-<p className="text-gray-500">
+<p className="mt-1 text-sm text-muted">
 {helper.country}
 </p>
 
-<p className="mt-1 text-sm">
+<p className="mt-3 text-sm text-foreground">
 {helper.skills}
 </p>
 
 {helper.experience ? (
-<p className="text-sm mt-1">
+<p className="mt-2 text-sm text-muted">
 {helper.experience} years experience
 </p>
 ) : null}
 
 {helper.rate ? (
-<p className="text-sm mt-1 text-gray-600">
+<p className="mt-2 text-sm text-muted">
 Rate: {helper.rate}
 </p>
 ) : null}
@@ -140,7 +135,7 @@ helper.whatsapp,
 )}
 target="_blank"
 rel="noreferrer"
-className="block mt-3 bg-green-500 text-white text-center py-2 rounded"
+className="mt-4 block rounded-full bg-[#25D366] px-4 py-3 text-center text-sm font-semibold text-white"
 >
 Contact Helper
 </a>
