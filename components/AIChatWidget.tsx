@@ -120,7 +120,7 @@ return(
 
 <div className="flex h-[520px] w-[calc(100vw-2rem)] max-w-[360px] flex-col rounded-2xl border border-border bg-surface shadow-2xl">
 
-<div className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-4 py-3 flex justify-between items-center rounded-t-2xl">
+<div className="flex items-center justify-between rounded-t-2xl bg-gradient-to-r from-blue-600 to-indigo-600 px-4 py-3 text-white">
 
 <div className="flex items-center gap-2">
 <span className="text-lg">🤖</span>
@@ -154,7 +154,7 @@ Recent interests: {visitorSummary}
 <button
 key={suggestion}
 onClick={()=>searchHelpers(suggestion)}
-className="rounded-full bg-gray-200 px-3 py-1 text-xs hover:bg-gray-300"
+className="rounded-full border border-border bg-surface-strong px-3 py-1 text-xs text-foreground hover:bg-surface"
 >
 {suggestion}
 </button>
@@ -169,7 +169,7 @@ className="rounded-full bg-gray-200 px-3 py-1 text-xs hover:bg-gray-300"
 className={
 entry.role === "user"
 ? "ml-auto max-w-[85%] rounded-2xl bg-accent px-3 py-2 text-sm text-accent-contrast"
-: "max-w-[90%] rounded-2xl bg-surface-strong px-3 py-2 text-sm text-foreground"
+: "max-w-[90%] rounded-2xl border border-border bg-surface-strong px-3 py-2 text-sm text-foreground"
 }
 >
 {entry.content}
@@ -250,7 +250,7 @@ className="flex-1 rounded-lg border border-border bg-surface-strong px-3 py-2 te
 
 <button
 onClick={()=>searchHelpers()}
-className="bg-indigo-600 text-white px-4 rounded-lg text-sm"
+className="rounded-lg bg-indigo-600 px-4 text-sm font-medium text-white"
 >
 
 {loading ? "..." : "Ask"}
@@ -267,7 +267,7 @@ className="bg-indigo-600 text-white px-4 rounded-lg text-sm"
 
 <button
 onClick={()=>setOpen(true)}
-className="bg-indigo-600 text-white w-14 h-14 rounded-full shadow-xl text-xl"
+className="h-14 w-14 rounded-full bg-indigo-600 text-xl text-white shadow-xl"
 >
 🤖
 </button>
