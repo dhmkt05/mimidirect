@@ -1,25 +1,59 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 
+import {
+  VISITOR_PREFS_COOKIE,
+  buildSuggestionChips,
+  getPreferenceSummary,
+  parseVisitorPreferences,
+  readCookieFromDocument,
+} from "@/lib/visitor-preferences"
 import { getHelperImageSrc, getWhatsAppLink } from "@/lib/helper-utils"
 import type { ChatMessage, ChatResponse, Helper } from "@/types/helper"
 
 /* eslint-disable @next/next/no-img-element */
 
-export default function AIChatWidget(){
+type AIChatWidgetProps = {
+initialSuggestions?: string[]
+preferenceSummary?: string
+}
+
+export default function AIChatWidget({
+initialSuggestions = [],
+preferenceSummary = "",
+}: AIChatWidgetProps){
 
 const [open,setOpen] = useState(true)
 const [message,setMessage] = useState("")
+const [suggestions,setSuggestions] = useState<string[]>(initialSuggestions)
+const [visitorSummary,setVisitorSummary] = useState(preferenceSummary)
 const [messages,setMessages] = useState<ChatMessage[]>([
 {
 id: "widget-welcome",
 role: "assistant",
-content: "Hi! I can chat with you or help you find a suitable helper.",
+content: preferenceSummary
+? `Welcome back. I can help with ${preferenceSummary} or new helper needs.`
+: "Hi! I can chat with you or help you find a suitable helper.",
 },
 ])
 const [loading,setLoading] = useState(false)
 const [error,setError] = useState<string | null>(null)
+
+useEffect(() => {
+const rawPreferences = readCookieFromDocument(VISITOR_PREFS_COOKIE)
+
+if (!rawPreferences) {
+return
+}
+
+const parsedPreferences = parseVisitorPreferences(rawPreferences)
+const nextSuggestions = buildSuggestionChips(parsedPreferences)
+const nextSummary = getPreferenceSummary(parsedPreferences)
+
+setSuggestions(nextSuggestions)
+setVisitorSummary(nextSummary)
+}, [])
 
 async function searchHelpers(msg?:string){
 const query = (msg || message).trim()
@@ -107,35 +141,25 @@ return(
 </div>
 ) : null}
 
+<div className="space-y-2">
+
+{visitorSummary ? (
+<p className="text-xs text-muted">
+Recent interests: {visitorSummary}
+</p>
+) : null}
+
 <div className="flex flex-wrap gap-2">
-
+{suggestions.map((suggestion) => (
 <button
-onClick={()=>searchHelpers("Cooking helper")}
-className="text-xs bg-gray-200 px-3 py-1 rounded-full hover:bg-gray-300"
+key={suggestion}
+onClick={()=>searchHelpers(suggestion)}
+className="rounded-full bg-gray-200 px-3 py-1 text-xs hover:bg-gray-300"
 >
-Cooking
+{suggestion}
 </button>
-
-<button
-onClick={()=>searchHelpers("Childcare helper")}
-className="text-xs bg-gray-200 px-3 py-1 rounded-full hover:bg-gray-300"
->
-Childcare
-</button>
-
-<button
-onClick={()=>searchHelpers("Elderly care helper")}
-className="text-xs bg-gray-200 px-3 py-1 rounded-full hover:bg-gray-300"
->
-Elderly Care
-</button>
-
-<button
-onClick={()=>searchHelpers("Myanmar helper")}
-className="text-xs bg-gray-200 px-3 py-1 rounded-full hover:bg-gray-300"
->
-Myanmar
-</button>
+))}
+</div>
 
 </div>
 

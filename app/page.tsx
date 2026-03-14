@@ -5,6 +5,12 @@ import { createServerClient } from "@supabase/auth-helpers-nextjs"
 import { createClient } from "@supabase/supabase-js"
 
 import { getHelperImageSrc } from "@/lib/helper-utils"
+import {
+buildSuggestionChips,
+getPreferenceSummary,
+parseVisitorPreferences,
+VISITOR_PREFS_COOKIE,
+} from "@/lib/visitor-preferences"
 import type { Helper } from "@/types/helper"
 
 const supabase = createClient(
@@ -38,6 +44,12 @@ const {
 data: { session },
 } = await supabaseAuth.auth.getSession()
 const isLoggedIn = Boolean(session)
+const visitorPreferences = parseVisitorPreferences(
+cookieStore.get(VISITOR_PREFS_COOKIE)?.value
+)
+const personalizedSuggestions = buildSuggestionChips(visitorPreferences)
+const preferenceSummary = getPreferenceSummary(visitorPreferences)
+const isReturningVisitor = visitorPreferences.visitCount > 1
 
 const { data, error } = await supabase
 .from("helpers")
@@ -62,8 +74,9 @@ Find. Hire. Direct.
 </h1>
 
 <p className="mx-auto mt-4 max-w-2xl text-base text-muted sm:text-lg">
-MimiDirect helps employers describe what they need and lets AI surface matching
-helpers faster, so you spend less time searching and more time hiring the right person.
+{isReturningVisitor && preferenceSummary
+? `Welcome back. We remember your interest in ${preferenceSummary}, so you can continue exploring without logging in.`
+: "MimiDirect helps employers describe what they need and lets AI surface matching helpers faster, so you spend less time searching and more time hiring the right person."}
 </p>
 
 <div className="mt-8 flex flex-col justify-center gap-3 sm:flex-row">
@@ -87,8 +100,20 @@ Browse Helpers
 <p className="mx-auto mt-5 max-w-xl text-sm text-muted">
 {isLoggedIn
 ? "You are logged in, so helper photos are shown clearly."
-: "Helper faces stay blurred on the homepage for privacy. Employers can log in to view full photos."}
+: "You can still browse the site and use AI without logging in. Helper faces stay blurred on the homepage for privacy until you sign in."}
 </p>
+
+<div className="mt-6 flex flex-wrap justify-center gap-2">
+{personalizedSuggestions.map((suggestion) => (
+<Link
+key={suggestion}
+href={`/chat?prompt=${encodeURIComponent(suggestion)}`}
+className="rounded-full border border-border bg-surface-strong px-4 py-2 text-sm font-medium text-foreground"
+>
+{suggestion}
+</Link>
+))}
+</div>
 
 </section>
 

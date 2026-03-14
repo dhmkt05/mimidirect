@@ -1,7 +1,20 @@
+import { cookies } from "next/headers"
 import { NextResponse } from "next/server"
 import { createClient } from "@supabase/supabase-js"
 
 import type { ChatResponse, Helper } from "@/types/helper"
+import {
+  VISITOR_CONSENT_COOKIE,
+  VISITOR_ID_COOKIE,
+  VISITOR_PREFS_COOKIE,
+  createVisitorId,
+  extractSearchTerms,
+  getVisitorCookieOptions,
+  hasVisitorConsent,
+  parseVisitorPreferences,
+  serializeVisitorPreferences,
+  updatePreferencesFromMessage,
+} from "@/lib/visitor-preferences"
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -87,46 +100,27 @@ function normalizeChatResponse(payload: unknown): ChatResponse {
   }
 }
 
-function extractSearchTerms(message: string) {
-  const normalized = message.toLowerCase()
-  const explicitTerms = [
-    "myanmar",
-    "india",
-    "philippines",
-    "indonesia",
-    "cooking",
-    "cook",
-    "child",
-    "childcare",
-    "elderly",
-    "cleaning",
-    "laundry",
-    "care",
-  ].filter((term) => normalized.includes(term))
+async function withVisitorCookies(response: NextResponse, message: string) {
+  const cookieStore = await cookies()
+  const hasConsent = hasVisitorConsent(cookieStore.get(VISITOR_CONSENT_COOKIE)?.value)
 
-  const keywordTerms = normalized
-    .replace(/[^a-z0-9\s]/g, " ")
-    .split(/\s+/)
-    .filter((word) => word.length > 2)
-    .filter(
-      (word) =>
-        ![
-          "want",
-          "need",
-          "helper",
-          "with",
-          "that",
-          "take",
-          "have",
-          "year",
-          "years",
-          "experience",
-          "looking",
-          "find",
-        ].includes(word)
-    )
+  if (!hasConsent) {
+    return response
+  }
 
-  return [...new Set([...explicitTerms, ...keywordTerms])].slice(0, 8)
+  const visitorId = cookieStore.get(VISITOR_ID_COOKIE)?.value ?? createVisitorId()
+  const preferences = parseVisitorPreferences(cookieStore.get(VISITOR_PREFS_COOKIE)?.value)
+  const updatedPreferences = updatePreferencesFromMessage(preferences, message)
+  const cookieOptions = getVisitorCookieOptions()
+
+  response.cookies.set(VISITOR_ID_COOKIE, visitorId, cookieOptions)
+  response.cookies.set(
+    VISITOR_PREFS_COOKIE,
+    serializeVisitorPreferences(updatedPreferences),
+    cookieOptions
+  )
+
+  return response
 }
 
 function isHelperSearchIntent(message: string) {
@@ -205,9 +199,12 @@ export async function POST(req: Request) {
       typeof body?.message === "string" ? body.message.trim() : ""
 
     if (!message) {
-      return NextResponse.json(
-        { error: "A search message is required." },
-        { status: 400 }
+      return await withVisitorCookies(
+        NextResponse.json(
+          { error: "A search message is required." },
+          { status: 400 }
+        ),
+        message
       )
     }
 
@@ -224,9 +221,12 @@ export async function POST(req: Request) {
     )
 
     if (!res.ok) {
-      return NextResponse.json(
-        { error: "The AI helper search service is unavailable right now." },
-        { status: 502 }
+      return await withVisitorCookies(
+        NextResponse.json(
+          { error: "The AI helper search service is unavailable right now." },
+          { status: 502 }
+        ),
+        message
       )
     }
 
@@ -234,34 +234,43 @@ export async function POST(req: Request) {
     const normalized = normalizeChatResponse(data)
 
     if ((normalized.helpers?.length ?? 0) > 0) {
-      return NextResponse.json(normalized)
+      return await withVisitorCookies(NextResponse.json(normalized), message)
     }
 
     if (!isHelperSearchIntent(message)) {
-      return NextResponse.json({
-        helpers: [],
-        reply:
-          normalized.reply ??
-          "Hello! I can help you find domestic helpers or answer questions about hiring through MimiDirect.",
-      })
+      return await withVisitorCookies(
+        NextResponse.json({
+          helpers: [],
+          reply:
+            normalized.reply ??
+            "Hello! I can help you find domestic helpers or answer questions about hiring through MimiDirect.",
+        }),
+        message
+      )
     }
 
     const fallbackHelpers = await searchHelpersInSupabase(message)
 
-    return NextResponse.json({
-      helpers: fallbackHelpers,
-      reply:
-        normalized.reply ??
-        (fallbackHelpers.length > 0
-          ? "I found some helper profiles that may match your request."
-          : "I could not find matching helpers yet. Try a simpler search like 'Myanmar cooking helper'."),
-    })
+    return await withVisitorCookies(
+      NextResponse.json({
+        helpers: fallbackHelpers,
+        reply:
+          normalized.reply ??
+          (fallbackHelpers.length > 0
+            ? "I found some helper profiles that may match your request."
+            : "I could not find matching helpers yet. Try a simpler search like 'Myanmar cooking helper'."),
+      }),
+      message
+    )
   } catch (error) {
     const message =
       error instanceof Error && error.name === "TimeoutError"
         ? "The AI helper search timed out."
         : "The AI helper search failed."
 
-    return NextResponse.json({ error: message }, { status: 500 })
+    return await withVisitorCookies(
+      NextResponse.json({ error: message }, { status: 500 }),
+      ""
+    )
   }
 }

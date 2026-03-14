@@ -1,15 +1,31 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
+import { useSearchParams } from "next/navigation"
 
 import { getHelperImageSrc, getWhatsAppLink } from "@/lib/helper-utils"
+import {
+VISITOR_PREFS_COOKIE,
+buildSuggestionChips,
+getPreferenceSummary,
+parseVisitorPreferences,
+readCookieFromDocument,
+} from "@/lib/visitor-preferences"
 import type { ChatMessage, ChatResponse, Helper } from "@/types/helper"
 
 /* eslint-disable @next/next/no-img-element */
 
 export default function ChatPage() {
+const searchParams = useSearchParams()
 
 const [message,setMessage] = useState("")
+const [suggestions,setSuggestions] = useState<string[]>([
+"Cooking helper",
+"Childcare helper",
+"Elderly care helper",
+"Myanmar helper",
+])
+const [visitorSummary,setVisitorSummary] = useState("")
 const [messages,setMessages] = useState<ChatMessage[]>([
 {
 id: "welcome",
@@ -21,8 +37,31 @@ content:
 const [loading,setLoading] = useState(false)
 const [error,setError] = useState<string | null>(null)
 
-async function searchHelpers(){
-const trimmedMessage = message.trim()
+useEffect(() => {
+const rawPreferences = readCookieFromDocument(VISITOR_PREFS_COOKIE)
+
+if (!rawPreferences) {
+return
+}
+
+const preferences = parseVisitorPreferences(rawPreferences)
+
+setSuggestions(buildSuggestionChips(preferences))
+setVisitorSummary(getPreferenceSummary(preferences))
+}, [])
+
+useEffect(() => {
+const prompt = searchParams.get("prompt")
+
+if (!prompt) {
+return
+}
+
+setMessage(prompt)
+}, [searchParams])
+
+async function searchHelpers(nextMessage?: string){
+const trimmedMessage = (nextMessage ?? message).trim()
 
 if(!trimmedMessage) return
 
@@ -94,6 +133,27 @@ Mimi AI Assistant 🤖
 <p className="mb-8 max-w-2xl text-muted">
 Describe the kind of helper you need and MimiDirect AI will return simple helper cards you can contact directly.
 </p>
+
+{visitorSummary ? (
+<p className="mb-4 max-w-2xl text-sm text-muted">
+Welcome back. We remembered your recent interests in {visitorSummary}.
+</p>
+) : null}
+
+<div className="mb-6 flex flex-wrap gap-2">
+{suggestions.map((suggestion) => (
+<button
+key={suggestion}
+onClick={() => {
+setMessage(suggestion)
+searchHelpers(suggestion)
+}}
+className="rounded-full border border-border bg-surface px-4 py-2 text-sm text-foreground"
+>
+{suggestion}
+</button>
+))}
+</div>
 
 <div className="mb-8 flex flex-col gap-3 sm:mb-10 sm:flex-row">
 
