@@ -1,8 +1,38 @@
 import Link from "next/link"
 import Image from "next/image"
-import ThemeToggle from "./ThemeToggle"
+import { cookies } from "next/headers"
+import { createServerClient } from "@supabase/auth-helpers-nextjs"
 
-export default function Navbar() {
+import ThemeToggle from "./ThemeToggle"
+import LogoutButton from "./LogoutButton"
+
+export default async function Navbar() {
+  const cookieStore = await cookies()
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        getAll() {
+          return cookieStore.getAll()
+        },
+        setAll(cookiesToSet) {
+          try {
+            cookiesToSet.forEach(({ name, value, options }) => {
+              cookieStore.set(name, value, options)
+            })
+          } catch {
+            // Navbar only needs read access for conditional navigation.
+          }
+        },
+      },
+    }
+  )
+  const {
+    data: { session },
+  } = await supabase.auth.getSession()
+  const isLoggedIn = Boolean(session)
+
   return (
     <nav className="sticky top-0 z-50 w-full border-b border-border bg-surface/95 backdrop-blur">
       <div className="mx-auto flex max-w-6xl flex-col gap-4 px-4 py-4 sm:px-6 lg:flex-row lg:items-center lg:justify-between">
@@ -33,12 +63,16 @@ export default function Navbar() {
             Ask AI
           </Link>
 
-          <Link
-            href="/login"
-            className="rounded-full bg-foreground px-5 py-2 text-background hover:opacity-90"
-          >
-            Login
-          </Link>
+          {isLoggedIn ? (
+            <LogoutButton />
+          ) : (
+            <Link
+              href="/login"
+              className="rounded-full bg-foreground px-5 py-2 text-background hover:opacity-90"
+            >
+              Login
+            </Link>
+          )}
 
           <ThemeToggle />
         </div>
