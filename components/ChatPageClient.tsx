@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 
 import { getHelperImageSrc, getWhatsAppLink } from "@/lib/helper-utils"
 import {
@@ -37,6 +37,7 @@ export default function ChatPageClient({ initialPrompt = "" }: ChatPageClientPro
   ])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const messagesEndRef = useRef<HTMLDivElement | null>(null)
 
   useEffect(() => {
     const rawPreferences = readCookieFromDocument(VISITOR_PREFS_COOKIE)
@@ -54,6 +55,10 @@ export default function ChatPageClient({ initialPrompt = "" }: ChatPageClientPro
   useEffect(() => {
     setMessage(initialPrompt)
   }, [initialPrompt])
+
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth", block: "end" })
+  }, [messages, error, loading])
 
   async function searchHelpers(nextMessage?: string) {
     const trimmedMessage = (nextMessage ?? message).trim()
@@ -138,7 +143,8 @@ export default function ChatPageClient({ initialPrompt = "" }: ChatPageClientPro
               setMessage(suggestion)
               searchHelpers(suggestion)
             }}
-            className="rounded-full border border-border bg-surface px-4 py-2 text-sm text-foreground"
+            disabled={loading}
+            className="rounded-full border border-border bg-surface px-4 py-2 text-sm text-foreground disabled:cursor-not-allowed disabled:opacity-60"
           >
             {suggestion}
           </button>
@@ -150,6 +156,7 @@ export default function ChatPageClient({ initialPrompt = "" }: ChatPageClientPro
           value={message}
           onChange={(e) => setMessage(e.target.value)}
           placeholder="Example: Myanmar cooking helper"
+          disabled={loading}
           className="w-full rounded-2xl border border-border bg-surface px-4 py-3 text-foreground outline-none"
           onKeyDown={(e) => {
             if (e.key === "Enter") searchHelpers()
@@ -158,7 +165,8 @@ export default function ChatPageClient({ initialPrompt = "" }: ChatPageClientPro
 
         <button
           onClick={() => searchHelpers()}
-          className="rounded-2xl bg-accent px-5 py-3 font-semibold text-accent-contrast sm:px-6"
+          disabled={loading || !message.trim()}
+          className="rounded-2xl bg-accent px-5 py-3 font-semibold text-accent-contrast disabled:cursor-not-allowed disabled:opacity-60 sm:px-6"
         >
           {loading ? "Searching..." : "Ask AI"}
         </button>
@@ -239,6 +247,7 @@ export default function ChatPageClient({ initialPrompt = "" }: ChatPageClientPro
             ) : null}
           </div>
         ))}
+        <div ref={messagesEndRef} />
       </div>
 
       {!loading && !error && messages.length === 1 ? (

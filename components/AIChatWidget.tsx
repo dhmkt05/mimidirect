@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 
 import {
   VISITOR_PREFS_COOKIE,
@@ -24,10 +24,11 @@ initialSuggestions = [],
 preferenceSummary = "",
 }: AIChatWidgetProps){
 
-const [open,setOpen] = useState(true)
+const [open,setOpen] = useState(false)
 const [message,setMessage] = useState("")
 const [suggestions,setSuggestions] = useState<string[]>(initialSuggestions)
 const [visitorSummary,setVisitorSummary] = useState(preferenceSummary)
+const messagesEndRef = useRef<HTMLDivElement | null>(null)
 const [messages,setMessages] = useState<ChatMessage[]>([
 {
 id: "widget-welcome",
@@ -54,6 +55,10 @@ const nextSummary = getPreferenceSummary(parsedPreferences)
 setSuggestions(nextSuggestions)
 setVisitorSummary(nextSummary)
 }, [])
+
+useEffect(() => {
+messagesEndRef.current?.scrollIntoView({ behavior: "smooth", block: "end" })
+}, [messages, error, loading])
 
 async function searchHelpers(msg?:string){
 const query = (msg || message).trim()
@@ -154,6 +159,7 @@ Recent interests: {visitorSummary}
 <button
 key={suggestion}
 onClick={()=>searchHelpers(suggestion)}
+disabled={loading}
 className="rounded-full border border-border bg-surface-strong px-3 py-1 text-xs text-foreground hover:bg-surface"
 >
 {suggestion}
@@ -236,6 +242,8 @@ Contact on WhatsApp
 </div>
 ))}
 
+<div ref={messagesEndRef} />
+
 </div>
 
 <div className="border-t p-3 flex gap-2">
@@ -245,11 +253,13 @@ value={message}
 onChange={(e)=>setMessage(e.target.value)}
 onKeyDown={(e)=>{ if(e.key==="Enter") searchHelpers() }}
 placeholder="Example: helper who can cook"
+disabled={loading}
 className="flex-1 rounded-lg border border-border bg-surface-strong px-3 py-2 text-sm text-foreground outline-none"
 />
 
 <button
 onClick={()=>searchHelpers()}
+disabled={loading || !message.trim()}
 className="rounded-lg bg-indigo-600 px-4 text-sm font-medium text-white"
 >
 

@@ -83,14 +83,14 @@ Find. Hire. Direct.
 
 <Link
 href="/chat"
-className="rounded-full bg-accent px-6 py-3 font-semibold text-accent-contrast"
+className="rounded-full bg-accent px-6 py-3 font-semibold text-accent-contrast shadow-sm hover:-translate-y-0.5 hover:shadow-md"
 >
 Ask AI
 </Link>
 
 <Link
 href="/helpers"
-className="rounded-full border border-border px-6 py-3 font-semibold text-foreground"
+className="rounded-full border border-border px-6 py-3 font-semibold text-foreground hover:-translate-y-0.5 hover:bg-surface-strong"
 >
 Browse Helpers
 </Link>
@@ -108,7 +108,7 @@ Browse Helpers
 <Link
 key={suggestion}
 href={`/chat?prompt=${encodeURIComponent(suggestion)}`}
-className="rounded-full border border-border bg-surface-strong px-4 py-2 text-sm font-medium text-foreground"
+className="rounded-full border border-border bg-surface-strong px-4 py-2 text-sm font-medium text-foreground hover:-translate-y-0.5 hover:bg-surface"
 >
 {suggestion}
 </Link>
@@ -144,7 +144,7 @@ We could not load helpers right now. Please try again shortly.
 {helpers?.map((helper)=>(
 <div
 key={helper.id}
-className="overflow-hidden rounded-3xl border border-border bg-surface-strong shadow-sm"
+className="overflow-hidden rounded-3xl border border-border bg-surface-strong shadow-sm hover:-translate-y-1 hover:shadow-lg"
 >
 
 <div className="relative">
@@ -185,7 +185,7 @@ Login to view full photo
 
 <Link
 href={`/helpers/${helper.id}`}
-className="mt-4 block rounded-full border border-border px-4 py-2 text-center text-sm font-semibold text-foreground"
+className="mt-4 block rounded-full border border-border px-4 py-2 text-center text-sm font-semibold text-foreground hover:bg-surface"
 >
 View Profile
 </Link>
